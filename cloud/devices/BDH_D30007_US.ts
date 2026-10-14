@@ -239,7 +239,14 @@ const BUZZER = Enum.of({
 })
 
 export default class Device extends AABBDevice {
-    constructor(HA: Connection, thinq: Thinq2Device, meta: Metadata) {
+    // The WashTower's dryer half (BDH_D39304_US) sends this same 42-byte record under class byte 0x34,
+    // so it reuses this handler with that byte; see BDH_D39304_US.ts.
+    constructor(
+        HA: Connection,
+        thinq: Thinq2Device,
+        meta: Metadata,
+        readonly classByte: number = CLASS_BYTE,
+    ) {
         super(HA, thinq, false)
         this.setConfig(
             allowExtendedType({
@@ -412,7 +419,7 @@ export default class Device extends AABBDevice {
     }
 
     processAABB(buf: Buffer) {
-        if (buf.length < 13 || buf[0] !== CLASS_BYTE || buf[1] !== ENVELOPE_TYPE) return
+        if (buf.length < 13 || buf[0] !== this.classByte || buf[1] !== ENVELOPE_TYPE) return
 
         const innerLen = buf.readUInt16BE(INNER_LEN_OFFSET)
         switch (buf[INNER_TYPE_OFFSET]) {
